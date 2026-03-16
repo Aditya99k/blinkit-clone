@@ -1,6 +1,6 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────
-# start-backend.sh — Start all Stage 1 Spring Boot services
+# start-backend.sh — Start all Spring Boot microservices
 # Usage:  ./start-backend.sh
 # Stop:   ./stop-backend.sh
 # ─────────────────────────────────────────────────────────────────
@@ -25,6 +25,27 @@ fi
 
 mkdir -p "$LOG_DIR"
 > "$PID_FILE"   # clear old PIDs
+
+# ── Step 0: Infrastructure Health Check ──────────────────────────
+echo ""
+echo "[INFO] Running infrastructure connectivity check..."
+echo "──────────────────────────────────────────────────"
+if [ -f "$SCRIPT_DIR/infra-check.sh" ]; then
+  bash "$SCRIPT_DIR/infra-check.sh"
+  INFRA_EXIT=$?
+  if [ $INFRA_EXIT -ne 0 ]; then
+    echo ""
+    echo "[ERROR] Infrastructure check failed. Fix the issues above before starting services."
+    echo "        Make sure colima + docker compose infra are running:"
+    echo "          colima start"
+    echo "          docker compose -f docker-compose.infra.yml up -d"
+    exit 1
+  fi
+else
+  echo "[WARN] infra-check.sh not found — skipping connectivity check"
+fi
+echo "──────────────────────────────────────────────────"
+echo ""
 
 # ── Helper: start a service ──────────────────────────────────────
 start_service() {

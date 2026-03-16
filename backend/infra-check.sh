@@ -284,7 +284,10 @@ echo ""
 
 if [ $TOTAL_FAIL -eq 0 ]; then
   echo -e "  ${GREEN}🎉 All infrastructure checks passed — system is ready!${NC}"
+  echo ""
+  exit 0
 else
-  echo -e "  ${RED}⚠️  Some checks failed. Review output above.${NC}"
+  echo -e "  ${RED}⚠️  Some checks failed. Fix the issues above before starting services.${NC}"
+  echo ""
+  exit 1
 fi
-echo ""
