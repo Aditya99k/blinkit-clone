@@ -1,12 +1,14 @@
 package com.blinkit.notification.consumer;
 
 import com.blinkit.notification.entity.NotificationLog;
+import com.blinkit.notification.event.InventoryLowEvent;
 import com.blinkit.notification.event.UserPasswordResetEvent;
 import com.blinkit.notification.event.UserRegisteredEvent;
 import com.blinkit.notification.repository.NotificationLogRepository;
 import com.blinkit.notification.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +21,9 @@ public class AuthEventConsumer {
 
     private final EmailService emailService;
     private final NotificationLogRepository logRepo;
+
+    @Value("${ADMIN_EMAIL:admin@blinkit.com}")
+    private String adminEmail;
 
     @KafkaListener(topics = "user.registered", groupId = "notification-service",
                    containerFactory = "userRegisteredListenerFactory")
@@ -60,6 +65,41 @@ public class AuthEventConsumer {
                 .userId(event.getUserId())
                 .email(event.getEmail())
                 .type("PASSWORD_RESET")
+                .status(status)
+                .errorMessage(error)
+                .sentAt(Instant.now())
+                .build());
+    }
+
+    @KafkaListener(topics = "inventory.low", groupId = "notification-service",
+                   containerFactory = "inventoryLowListenerFactory")
+    public void onInventoryLow(InventoryLowEvent event) {
+        log.info("Received inventory.low event for productId={}, qty={}", event.getProductId(), event.getAvailableQty());
+        String status = "SENT";
+        String error  = null;
+        try {
+            String subject = "Low Stock Alert: " + event.getProductName();
+            String body = String.format(
+                "Hi Admin,\n\n" +
+                "Stock for the following product is running low:\n\n" +
+                "Product: %s (ID: %s)\n" +
+                "Available Qty: %d\n" +
+                "Low Stock Threshold: %d\n\n" +
+                "Please restock at your earliest convenience.\n\n" +
+                "Team Blinkit",
+                event.getProductName(), event.getProductId(),
+                event.getAvailableQty(), event.getLowStockThreshold()
+            );
+            emailService.sendAdminAlert(adminEmail, subject, body);
+        } catch (Exception e) {
+            log.error("Failed to send low-stock alert email: {}", e.getMessage());
+            status = "FAILED";
+            error  = e.getMessage();
+        }
+        logRepo.save(NotificationLog.builder()
+                .userId("SYSTEM")
+                .email(adminEmail)
+                .type("INVENTORY_LOW")
                 .status(status)
                 .errorMessage(error)
                 .sentAt(Instant.now())

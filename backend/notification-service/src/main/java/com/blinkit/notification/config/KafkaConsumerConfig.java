@@ -1,5 +1,6 @@
 package com.blinkit.notification.config;
 
+import com.blinkit.notification.event.InventoryLowEvent;
 import com.blinkit.notification.event.UserPasswordResetEvent;
 import com.blinkit.notification.event.UserRegisteredEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -55,6 +56,20 @@ public class KafkaConsumerConfig {
         ConcurrentKafkaListenerContainerFactory<String, UserPasswordResetEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(userPasswordResetConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, InventoryLowEvent> inventoryLowConsumerFactory() {
+        JsonDeserializer<InventoryLowEvent> deser = new JsonDeserializer<>(InventoryLowEvent.class, false);
+        return new DefaultKafkaConsumerFactory<>(baseProps(), new StringDeserializer(), deser);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, InventoryLowEvent> inventoryLowListenerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, InventoryLowEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(inventoryLowConsumerFactory());
         return factory;
     }
 }

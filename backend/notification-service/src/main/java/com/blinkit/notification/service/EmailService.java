@@ -50,6 +50,10 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
+    public void sendAdminAlert(String toEmail, String subject, String body) {
+        send(toEmail, subject, body);
+    }
+
     private void send(String to, String subject, String body) {
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(fromEmail);
