@@ -117,6 +117,9 @@ spring:
 jwt:
   secret-key: ${JWT_SECRET_KEY:blinkit-dev-secret-key-minimum-32-chars!!}
 
+internal:
+  secret-key: ${INTERNAL_SECRET:blinkit-internal-svc-secret-2026!!}
+
 resilience4j:
   circuitbreaker:
     instances:
