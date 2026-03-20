@@ -3,6 +3,7 @@ package com.blinkit.gateway.filter;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -31,11 +32,15 @@ import java.util.List;
  *     don't need to parse JWT themselves — they just read the headers
  *  5. Rejects invalid/missing tokens with 401
  */
+@Slf4j
 @Component
 public class JwtAuthFilter implements GlobalFilter, Ordered {
 
     @Value("${jwt.secret-key}")
     private String secretKey;
+
+    @Value("${internal.secret-key}")
+    private String internalSecret;
 
     private final ReactiveStringRedisTemplate redisTemplate;
 
@@ -65,10 +70,14 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
+        log.info("path: "+path);
 
-        // Step 1 — skip auth for public routes
+        // Step 1 — skip auth for public routes but still inject internal secret
         if (isPublicPath(path, exchange.getRequest().getMethod())) {
-            return chain.filter(exchange);
+            ServerWebExchange publicExchange = exchange.mutate()
+                    .request(r -> r.header("X-Internal-Secret", internalSecret))
+                    .build();
+            return chain.filter(publicExchange);
         }
 
         // Step 2 — extract Authorization header
@@ -97,12 +106,13 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
                     if (Boolean.TRUE.equals(blacklisted)) {
                         return unauthorised(exchange, "Token has been invalidated");
                     }
-                    // Step 5 — inject user context headers for downstream services
+                    // Step 5 — inject user context + internal secret headers for downstream services
                     ServerWebExchange mutatedExchange = exchange.mutate()
                             .request(r -> r
-                                    .header("X-User-Id",    userId)
-                                    .header("X-User-Role",  role)
-                                    .header("X-User-Email", email != null ? email : ""))
+                                    .header("X-User-Id",        userId)
+                                    .header("X-User-Role",      role)
+                                    .header("X-User-Email",     email != null ? email : "")
+                                    .header("X-Internal-Secret", internalSecret))
                             .build();
                     return chain.filter(mutatedExchange);
                 });
