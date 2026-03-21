@@ -429,34 +429,46 @@ POST /payments/refund/{txnId}      → Initiate refund (admin/cancellation)
 
 ### 2.8 Cart Service — `cart-service` (Port 8087)
 
-**Storage:** Redis only (fast, ephemeral)
+**Storage:** Redis only (fast, ephemeral — no MongoDB)
 
 **Responsibilities:**
-- Add/remove/update items in cart
-- Calculate totals (calls product-service for price)
-- Apply promo codes
-- Cart persists for 7 days (Redis TTL)
+- Add/remove/update items in cart (max 10 units per product)
+- Snapshot price at add-time; refresh live availability on GET /cart
+- Calculate totals with delivery fee and coupon discount
+- Apply promo codes (validates via coupon-service Feign)
+- Cart persists for 7 days (Redis TTL, reset on every write)
 - Cart is per user (key: `cart:{userId}`)
+- Kafka consumer: `order.confirmed` → clears cart automatically
 
 **Redis Key Structure:**
 ```
 cart:{userId}  →  Hash {
-  "prod_id_1": {"quantity": 2, "price": 28.0, "name": "Amul Milk"},
-  "prod_id_2": {"quantity": 1, "price": 150.0, "name": "Bread"}
+  "{productId}": "{\"productId\":\"...\",\"name\":\"Amul Milk\",\"imageUrl\":\"...\",\"unit\":\"500ml\",\"mrp\":32.0,\"unitPrice\":28.0,\"quantity\":2}"
 }
 cart:{userId}:promo  → "SAVE10"
 ```
 
+**Delivery Fee Logic:**
+- ₹20 flat delivery fee
+- Free delivery if `itemsTotal ≥ ₹199`
+- `FREE_DELIVERY` coupon type forces delivery fee to ₹0 regardless of total
+
 **Endpoints:**
 ```
-GET    /cart                   → Get my cart with totals
-POST   /cart/items             → Add item {productId, quantity}
-PUT    /cart/items/{productId} → Update quantity
+GET    /cart                   → Get my cart with totals + live availability check
+GET    /cart/count             → {count: 3} for nav bar badge
+POST   /cart/items             → Add item {productId, quantity} — max 10 per product
+PUT    /cart/items/{productId} → Update quantity (0 = remove) — max 10 per product
 DELETE /cart/items/{productId} → Remove item
-DELETE /cart                   → Clear cart
-POST   /cart/promo             → Apply promo code
+DELETE /cart                   → Clear entire cart
+POST   /cart/promo             → Apply promo code (validates via coupon-service)
 DELETE /cart/promo             → Remove promo code
 ```
+
+**Inter-service dependencies:**
+- Feign → `product-service`: verify availability + fetch price on add; live `isAvailable` on GET /cart
+- Feign → `coupon-service`: validate promo code on apply and compute discount on GET /cart
+- Resilience4j circuit breaker on all Feign calls
 
 ---
 
@@ -485,43 +497,50 @@ PUT  /delivery/{taskId}/location    → Update location (lat, lng)
 
 ### 2.10 Coupon Service — `coupon-service` (Port 8090)
 
-**MongoDB Collection:** `coupon_db.coupons`
+**MongoDB Collections:** `coupon_db.coupons` + `coupon_db.coupon_usage`
 
 **Responsibilities:**
 - Create/manage discount coupons (admin)
 - Validate coupon on cart apply (check eligibility, usage limit, expiry)
 - Track coupon usage per user (prevent re-use)
+- Cache active coupons in Redis for fast lookups
 
 **Coupon Types:**
 ```
-FLAT        → Fixed ₹ discount (e.g. ₹50 off)
-PERCENT     → Percentage discount (e.g. 10% off, max ₹100)
-FIRST_ORDER → Only for first order per user
-MIN_ORDER   → Applicable only if cart total > X
+FLAT          → Fixed ₹ discount (e.g. ₹50 off)
+PERCENT       → Percentage discount (e.g. 10% off, up to maxDiscount cap)
+FIRST_ORDER   → Only for first-time orderers (order-service check deferred to Stage 5)
+FREE_DELIVERY → Sets deliveryFee = 0 in cart regardless of order total
 ```
+
+**Access control:**
+- `POST /coupons/validate` — **internal only** (Feign from cart-service via X-Internal-Secret; blocked at gateway)
+- `GET /coupons/active` — public (no auth; for frontend promo banner display)
+- `POST/PUT/DELETE /admin/coupons/**` — ADMIN JWT required
 
 **Endpoints:**
 ```
-POST /coupons/validate          → Validate coupon {code, userId, cartTotal}
-                                  Returns: {valid, discount, message}
+GET  /coupons/active            → List currently active coupons (public)
+POST /coupons/validate          → Internal: validate {code, userId, cartTotal}
+                                  Returns: {valid, discountAmount, isFreeDelivery, message}
 
 # Admin only:
-POST   /admin/coupons           → Create coupon
-GET    /admin/coupons           → List all coupons
-PUT    /admin/coupons/{id}      → Update coupon
-DELETE /admin/coupons/{id}      → Delete coupon
+POST   /admin/coupons           → Create coupon (code saved as UPPERCASE)
+GET    /admin/coupons           → List all coupons (paginated)
+GET    /admin/coupons/{id}      → Get coupon by ID
+PUT    /admin/coupons/{id}      → Update coupon (evicts Redis cache)
+DELETE /admin/coupons/{id}      → Delete coupon (evicts Redis cache)
 GET    /admin/coupons/{id}/usage → View usage stats
 ```
 
 **Coupon Document:**
 ```json
 {
-  "_id": "coup_id",
   "code": "SAVE10",
   "type": "PERCENT",
-  "value": 10,
-  "maxDiscount": 100,
-  "minOrderAmount": 149,
+  "value": 10.0,
+  "maxDiscount": 100.0,
+  "minOrderAmount": 149.0,
   "usageLimit": 1000,
   "usedCount": 342,
   "perUserLimit": 1,
@@ -530,6 +549,19 @@ GET    /admin/coupons/{id}/usage → View usage stats
   "isActive": true
 }
 ```
+
+**CouponUsage Document:**
+```json
+{
+  "couponId": "...",
+  "couponCode": "SAVE10",
+  "userId": "...",
+  "orderId": null,
+  "usedAt": "..."
+}
+```
+
+**Redis key:** `coupon:{CODE}` → serialized coupon JSON, TTL 5 min. Evicted on PUT/DELETE.
 
 ---
 
@@ -2275,42 +2307,175 @@ ADMIN ACCESS:
 
 **Goal:** Customer builds a cart, applies a discount coupon, sees correct price breakdown.
 
+**Build order (strict):** coupon-service first (cart depends on its Feign client), then cart-service.
+
 **Services to build:**
 - `coupon-service` (port 8090)
 - `cart-service` (port 8087)
 
-**Checklist:**
-- [ ] **coupon-service**
-  - [ ] `POST /admin/coupons` — create coupon (FLAT, PERCENT, FIRST_ORDER, FREE_DELIVERY types)
-  - [ ] `GET/PUT/DELETE /admin/coupons/{id}` — manage coupons
-  - [ ] `GET /admin/coupons/{id}/usage` — usage stats
-  - [ ] `POST /coupons/validate` — accepts `{code, userId, cartTotal}`:
-    - checks `isActive`, `validFrom ≤ now ≤ validUntil`
-    - checks `cartTotal ≥ minOrderAmount`
-    - checks `usedCount < totalUsageLimit` (if set)
-    - checks per-user usage via `coupon_db.coupon_usage`
-    - checks `applicableOnFirstOrderOnly` by calling order-service (Feign) later; skip for now
-    - returns `{valid: true, discount: 18.0, message: "10% off applied"}`
-  - [ ] Redis cache: `coupon:{code}` (5 min TTL) for fast repeated lookups
-- [ ] **cart-service**
-  - [ ] `POST /cart/items` — add item; calls product-service (Feign) to verify price + `isAvailable`
-  - [ ] `PUT /cart/items/{productId}` — update quantity (0 = remove)
-  - [ ] `DELETE /cart/items/{productId}` — remove item
-  - [ ] `DELETE /cart` — clear entire cart
-  - [ ] `GET /cart` — returns full cart with:
-    - all items (productId, name, qty, unitPrice, totalPrice)
-    - `itemsTotal`, `deliveryFee` (0 if total ≥ threshold), `couponDiscount`, `totalAmount`
-  - [ ] `POST /cart/promo` — apply promo code; calls coupon-service (Feign) to validate; stores code in `cart:{userId}:promo`
-  - [ ] `DELETE /cart/promo` — remove promo code
-  - [ ] Cart stored as Redis Hash: `cart:{userId}` with 7-day TTL
-  - [ ] Kafka consumer: `order.confirmed` → `DEL cart:{userId}` (clear cart after order placed)
-  - [ ] Resilience4j circuit breaker on Feign calls to product-service and coupon-service
+---
+
+#### coupon-service checklist
+
+- [ ] `POST /admin/coupons` — create coupon; ADMIN only
+  - Supported types: `FLAT`, `PERCENT`, `FIRST_ORDER`, `FREE_DELIVERY`
+  - Coupon code stored in **UPPERCASE** (normalize on save)
+- [ ] `GET /admin/coupons` — list all coupons (paginated); ADMIN only
+- [ ] `GET /admin/coupons/{id}` — get single coupon; ADMIN only
+- [ ] `PUT /admin/coupons/{id}` — update coupon; ADMIN only
+- [ ] `DELETE /admin/coupons/{id}` — delete coupon; ADMIN only
+- [ ] `GET /admin/coupons/{id}/usage` — usage stats (total used, per-user breakdown); ADMIN only
+- [ ] `GET /coupons/active` — list currently active coupons (public, no auth required; for frontend promo banner)
+- [ ] `POST /coupons/validate` — **internal only** (called by cart-service via Feign, blocked at gateway level):
+  - Normalize `code` to UPPERCASE before lookup
+  - checks `isActive = true`
+  - checks `validFrom ≤ now ≤ validUntil`
+  - checks `cartTotal ≥ minOrderAmount`
+  - checks `usedCount < usageLimit` (if `usageLimit` is set)
+  - checks per-user usage via `coupon_db.coupon_usage` — rejects if user already used this coupon `perUserLimit` times
+  - `FIRST_ORDER` type: skip order-service check for now; add `// TODO: verify via order-service in Stage 5` comment
+  - returns `{valid: true, discountAmount: 18.0, isFreeDelivery: false, message: "10% off applied"}`
+- [ ] Redis cache: `coupon:{CODE}` (5 min TTL) for fast repeated lookups — evict on coupon update/delete
+- [ ] MongoDB collections: `coupon_db.coupons` + `coupon_db.coupon_usage`
+
+**Coupon document fields:**
+```json
+{
+  "code": "SAVE10",
+  "type": "PERCENT",
+  "value": 10.0,
+  "maxDiscount": 100.0,
+  "minOrderAmount": 149.0,
+  "usageLimit": 1000,
+  "usedCount": 0,
+  "perUserLimit": 1,
+  "validFrom": "2024-01-01T00:00:00Z",
+  "validUntil": "2024-12-31T00:00:00Z",
+  "isActive": true
+}
+```
+
+**CouponUsage document fields:**
+```json
+{
+  "couponId": "...",
+  "couponCode": "SAVE10",
+  "userId": "...",
+  "orderId": "...",
+  "usedAt": "..."
+}
+```
+> Note: `orderId` is null at validate time; updated when order is confirmed in Stage 5.
+
+**Gateway access control for coupon-service:**
+- `/api/coupons/active` — public (GET only, no auth)
+- `/api/coupons/validate` — blocked at gateway (internal Feign only, requires `X-Internal-Secret`)
+- `/api/coupons/admin/**` — ADMIN JWT required
+
+---
+
+#### cart-service checklist
+
+- [ ] `POST /cart/items` — add item:
+  - Calls product-service (Feign) to verify `isAvailable = true` and fetch current `sellingPrice`, `mrp`, `name`, `imageUrl`, `unit`
+  - **Snapshots price at add-time** (stored in Redis); price is NOT re-fetched on every mutation
+  - Enforce max **10 units per product** — reject with `400` if exceeded
+  - If product already in cart, increments quantity (subject to max 10 cap)
+  - Resets cart TTL to 7 days on every write
+- [ ] `PUT /cart/items/{productId}` — update quantity:
+  - quantity `0` → removes the item (same as DELETE)
+  - Enforce max 10 cap
+  - Resets TTL to 7 days
+- [ ] `DELETE /cart/items/{productId}` — remove a single item
+- [ ] `DELETE /cart` — clear entire cart (removes `cart:{userId}` and `cart:{userId}:promo`)
+- [ ] `GET /cart` — returns full cart with real-time availability check:
+  - Fetches all items from Redis Hash
+  - Calls product-service (Feign) once (batch or per item) to get **live `isAvailable`** status
+  - Flags each item with `isAvailable: false` if product is out of stock (does NOT auto-remove)
+  - Applies promo code (fetched from `cart:{userId}:promo`) via coupon-service (Feign) to compute discount
+  - Returns:
+    ```json
+    {
+      "items": [
+        {
+          "productId": "...", "name": "Amul Milk", "imageUrl": "...", "unit": "500ml",
+          "mrp": 32.0, "unitPrice": 28.0, "quantity": 2, "totalPrice": 56.0,
+          "isAvailable": true
+        }
+      ],
+      "itemsTotal": 56.0,
+      "deliveryFee": 20.0,
+      "couponCode": "SAVE10",
+      "couponDiscount": 5.6,
+      "isFreeDelivery": false,
+      "totalAmount": 70.4,
+      "totalItems": 2
+    }
+    ```
+  - Delivery fee: **₹20 flat**; free (`deliveryFee = 0`) if `itemsTotal ≥ ₹199`
+  - `FREE_DELIVERY` coupon type overrides delivery fee to 0 regardless of total
+- [ ] `GET /cart/count` — returns `{count: 3}` (total item count, sum of quantities); for nav bar badge
+- [ ] `POST /cart/promo` — apply promo code:
+  - Normalize code to UPPERCASE
+  - Calls coupon-service (Feign) to validate `{code, userId, cartTotal}`
+  - Stores validated code in `cart:{userId}:promo` with 7-day TTL
+  - Returns updated cart totals
+- [ ] `DELETE /cart/promo` — remove promo code (deletes `cart:{userId}:promo`)
+- [ ] Cart stored as Redis Hash: `cart:{userId}` → each field key is `productId`, value is JSON string:
+  ```json
+  {
+    "productId": "...", "name": "Amul Milk", "imageUrl": "...", "unit": "500ml",
+    "mrp": 32.0, "unitPrice": 28.0, "quantity": 2
+  }
+  ```
+- [ ] Kafka consumer: `order.confirmed` → delete `cart:{userId}` and `cart:{userId}:promo` (clear cart after order placed)
+  - GroupId: `cart-service`
+  - Consumer is implemented now; events only flow in Stage 5 when order-service publishes `order.confirmed`
+- [ ] Resilience4j circuit breaker on ALL Feign calls (product-service + coupon-service)
+  - Fallback for product-service: return `isAvailable: false` with last known price from Redis
+  - Fallback for coupon-service: reject promo apply with `503 Service Unavailable`
+
+**Redis key structure:**
+```
+cart:{userId}           → Hash (productId → JSON item)     TTL: 7 days
+cart:{userId}:promo     → String (coupon code e.g. SAVE10) TTL: 7 days
+```
+
+**Gateway routes to add:**
+```yaml
+- id: coupon-service
+  uri: lb://coupon-service
+  predicates:
+    - Path=/api/coupons/**
+  filters:
+    - StripPrefix=1
+
+- id: cart-service
+  uri: lb://cart-service
+  predicates:
+    - Path=/api/cart/**
+  filters:
+    - StripPrefix=1
+```
+
+**Public paths to add in JwtAuthFilter:**
+- `/api/coupons/active` (GET only — public promo banner)
+
+**Internal-only paths (blocked at gateway, require X-Internal-Secret):**
+- `/coupons/validate` (direct service path, not routed via gateway)
+
+---
 
 **Feign clients added:**
-- `cart-service → product-service` (price + availability check)
-- `cart-service → coupon-service` (validate promo)
+- `cart-service → product-service` (verify availability + fetch price on add; live availability on GET /cart)
+- `cart-service → coupon-service` (validate and compute discount on GET /cart and POST /cart/promo)
 
-**✅ Done when:** Customer adds items to cart, applies "SAVE10" coupon, gets correct discounted total, cart persists in Redis for 7 days.
+**Kafka topics involved:**
+| Topic | Role in Stage 4 |
+|-------|-----------------|
+| `order.confirmed` | cart-service consumes → clears cart (produced by order-service in Stage 5) |
+
+**✅ Done when:** Customer adds items to cart, applies "SAVE10" coupon, sees correct discounted total with delivery fee breakdown, cart persists in Redis for 7 days, out-of-stock items are flagged on GET /cart.
 
 ---
 
