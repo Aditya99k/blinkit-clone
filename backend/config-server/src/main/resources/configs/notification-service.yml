@@ -19,7 +19,7 @@ spring:
       mail.smtp.starttls.enable: true
 
 app:
-  password-reset-base-url: ${PASSWORD_RESET_BASE_URL:http://localhost:3000/reset-password}
+  password-reset-base-url: ${PASSWORD_RESET_BASE_URL:http://localhost:5174/reset-password}
 
 management:
   endpoints:
