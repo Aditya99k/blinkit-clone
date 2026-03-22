@@ -14,6 +14,8 @@ public class PayRequest {
     @NotBlank(message = "userId is required")
     private String userId;
 
+    private String addressId;   // delivery address UUID — forwarded to delivery-service via Kafka
+
     @NotNull(message = "amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
     private Double amount;

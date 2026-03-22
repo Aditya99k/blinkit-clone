@@ -133,6 +133,7 @@ public class OrderService {
             PaymentApiResponse payResp = paymentClient.pay(PayRequest.builder()
                     .orderId(orderId)
                     .userId(userId)
+                    .addressId(req.getAddressId())
                     .amount(cart.getTotalAmount())
                     .description("Payment for order " + orderNumber)
                     .build());

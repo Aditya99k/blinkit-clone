@@ -128,6 +128,7 @@ public class PaymentService {
                 .paymentId(txId)
                 .orderId(req.getOrderId())
                 .userId(req.getUserId())
+                .addressId(req.getAddressId())
                 .amount(req.getAmount())
                 .paidAt(Instant.now())
                 .build());

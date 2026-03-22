@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class PayRequest {
     private String orderId;
     private String userId;
+    private String addressId;
     private Double amount;
     private String description;
 }

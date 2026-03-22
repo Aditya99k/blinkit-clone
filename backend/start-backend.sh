@@ -141,6 +141,14 @@ wait_for_port "payment-service" 8086
 start_service "order-service" "$JAR_DIR/order-service/target/order-service-1.0.0-SNAPSHOT.jar"
 wait_for_port "order-service" 8085
 
+# ── Step 13: Start Delivery Service ───────────────────────────────
+start_service "delivery-service" "$JAR_DIR/delivery-service/target/delivery-service-1.0.0-SNAPSHOT.jar"
+wait_for_port "delivery-service" 8088
+
+# ── Step 14: Start Review Service ─────────────────────────────────
+start_service "review-service" "$JAR_DIR/review-service/target/review-service-1.0.0-SNAPSHOT.jar"
+wait_for_port "review-service" 8091
+
 # ── Done ─────────────────────────────────────────────────────────
 echo ""
 echo "✔  All services are UP"
@@ -157,6 +165,8 @@ echo "   Coupon Service    →  http://localhost:8090/swagger-ui.html"
 echo "   Cart Service      →  http://localhost:8087/swagger-ui.html"
 echo "   Payment Service   →  http://localhost:8086/swagger-ui.html"
 echo "   Order Service     →  http://localhost:8085/swagger-ui.html"
+echo "   Delivery Service  →  http://localhost:8088/actuator/health"
+echo "   Review Service    →  http://localhost:8091/swagger-ui.html"
 echo "   Kafka UI          →  http://localhost:9093"
 echo "   Redis Commander   →  http://localhost:9191"
 echo ""

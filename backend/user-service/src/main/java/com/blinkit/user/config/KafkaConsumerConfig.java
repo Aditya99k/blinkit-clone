@@ -1,5 +1,6 @@
 package com.blinkit.user.config;
 
+import com.blinkit.user.event.UserDeletedEvent;
 import com.blinkit.user.event.UserRegisteredEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -40,6 +41,30 @@ public class KafkaConsumerConfig {
         ConcurrentKafkaListenerContainerFactory<String, UserRegisteredEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(userRegisteredConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, UserDeletedEvent> userDeletedConsumerFactory() {
+        JsonDeserializer<UserDeletedEvent> deser = new JsonDeserializer<>(UserDeletedEvent.class, false);
+        return new DefaultKafkaConsumerFactory<>(
+                Map.of(
+                    ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,         bootstrapServers,
+                    ConsumerConfig.GROUP_ID_CONFIG,                  "user-service",
+                    ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,         "earliest",
+                    ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,    StringDeserializer.class,
+                    ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,  JsonDeserializer.class
+                ),
+                new StringDeserializer(),
+                deser
+        );
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, UserDeletedEvent> userDeletedListenerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, UserDeletedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(userDeletedConsumerFactory());
         return factory;
     }
 }

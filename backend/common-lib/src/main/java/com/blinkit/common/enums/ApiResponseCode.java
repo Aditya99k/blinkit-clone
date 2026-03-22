@@ -14,6 +14,7 @@ public enum ApiResponseCode {
     LOGIN_SUCCESS(HttpStatus.OK, "Login successful"),
     TOKEN_REFRESHED(HttpStatus.OK, "Token refreshed"),
     LOGOUT_SUCCESS(HttpStatus.OK, "Logged out successfully"),
+    ACCOUNT_DELETED(HttpStatus.OK, "Account deleted successfully"),
     PASSWORD_RESET_LINK_SENT(HttpStatus.OK, "Password reset link sent to your email"),
     RESET_TOKEN_VALID(HttpStatus.OK, "Token is valid"),
     PASSWORD_RESET_SUCCESS(HttpStatus.OK, "Password reset successfully. Please login with your new password."),

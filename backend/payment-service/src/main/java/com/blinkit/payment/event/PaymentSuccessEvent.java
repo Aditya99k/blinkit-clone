@@ -15,6 +15,7 @@ public class PaymentSuccessEvent {
     private String paymentId;   // transactionId
     private String orderId;
     private String userId;
+    private String addressId;   // delivery address UUID
     private double amount;
     private Instant paidAt;
 }

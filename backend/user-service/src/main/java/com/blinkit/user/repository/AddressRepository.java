@@ -10,4 +10,5 @@ public interface AddressRepository extends MongoRepository<Address, String> {
     List<Address> findByUserId(String userId);
     Optional<Address> findByAddressIdAndUserId(String addressId, String userId);
     void deleteByAddressIdAndUserId(String addressId, String userId);
+    void deleteByUserId(String userId);
 }

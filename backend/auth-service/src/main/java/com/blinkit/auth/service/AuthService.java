@@ -5,6 +5,7 @@ import com.blinkit.auth.dto.request.ResetPasswordRequest;
 import com.blinkit.auth.dto.request.SignupRequest;
 import com.blinkit.auth.dto.response.AuthResponse;
 import com.blinkit.auth.entity.AuthUser;
+import com.blinkit.auth.event.UserDeletedEvent;
 import com.blinkit.auth.event.UserPasswordResetEvent;
 import com.blinkit.auth.event.UserRegisteredEvent;
 import com.blinkit.auth.kafka.AuthEventPublisher;
@@ -21,6 +22,7 @@ import com.blinkit.common.enums.Role;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -205,6 +207,53 @@ public class AuthService {
         // Invalidate any existing refresh token
         tokenService.deleteRefreshToken(userId);
         log.info("Password reset successfully for userId={}", userId);
+    }
+
+    // ── Register Delivery Agent (admin-only, no OTP needed) ───────
+
+    public Map<String, String> registerDeliveryAgent(String email, String password) {
+        if (userRepo.existsByEmail(email.toLowerCase())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
+        String userId = UUID.randomUUID().toString();
+        AuthUser user = AuthUser.builder()
+                .userId(userId)
+                .email(email.toLowerCase())
+                .password(passwordEncoder.encode(password))
+                .roles(List.of(Role.DELIVERY_AGENT))
+                .isVerified(true)
+                .isActive(true)
+                .build();
+        userRepo.save(user);
+        log.info("Delivery agent account created: {}", email);
+        return Map.of("userId", userId, "email", email.toLowerCase());
+    }
+
+    // ── Delete account ────────────────────────────────────────────
+
+    public void deleteAccount(String userId, String accessToken) {
+        AuthUser user = userRepo.findByUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        // Invalidate tokens first (same as logout)
+        tokenService.deleteRefreshToken(userId);
+        try {
+            long expiry = jwtUtil.extractAllClaims(accessToken).getExpiration().getTime();
+            long ttl = (expiry - System.currentTimeMillis()) / 1000;
+            if (ttl > 0) tokenService.blacklistToken(accessToken, ttl);
+        } catch (Exception e) {
+            log.warn("Could not blacklist token during account deletion: {}", e.getMessage());
+        }
+
+        // Hard delete from auth_db
+        userRepo.deleteByUserId(userId);
+        log.info("Hard deleted auth account for userId={}", userId);
+
+        // Notify other services to clean up
+        eventPublisher.publishUserDeleted(UserDeletedEvent.builder()
+                .userId(userId)
+                .email(user.getEmail())
+                .build());
     }
 
     // ── Helper ────────────────────────────────────────────────────

@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Tag(name = "Auth", description = "Signup, Login, OTP Verify, Refresh, Logout")
 @RestController
@@ -56,6 +58,36 @@ public class AuthController {
         AuthResponse response = authService.refresh(userId, refreshToken);
         return ResponseEntity.status(ApiResponseCode.TOKEN_REFRESHED.getHttpStatus())
                 .body(ApiResponse.ok(ApiResponseCode.TOKEN_REFRESHED.getMessage(), response));
+    }
+
+    @Operation(summary = "Register a delivery agent account (admin only)")
+    @PostMapping("/delivery-agent")
+    public ResponseEntity<ApiResponse<Map<String, String>>> registerDeliveryAgent(
+            @RequestHeader("X-User-Role") String role,
+            @RequestBody Map<String, String> body) {
+        if (!"ADMIN".equalsIgnoreCase(role)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin access required");
+        }
+        String email = body.get("email");
+        String password = body.get("password");
+        if (email == null || email.isBlank() || password == null || password.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email and password are required");
+        }
+        Map<String, String> result = authService.registerDeliveryAgent(email, password);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Delivery agent account created", result));
+    }
+
+    @Operation(summary = "Delete my account permanently (hard delete)")
+    @DeleteMapping("/account")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(
+            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        String token = (authHeader != null && authHeader.startsWith("Bearer "))
+                ? authHeader.substring(7) : "";
+        authService.deleteAccount(userId, token);
+        return ResponseEntity.status(ApiResponseCode.ACCOUNT_DELETED.getHttpStatus())
+                .body(ApiResponse.ok(ApiResponseCode.ACCOUNT_DELETED.getMessage()));
     }
 
     @Operation(summary = "Logout — invalidates tokens")

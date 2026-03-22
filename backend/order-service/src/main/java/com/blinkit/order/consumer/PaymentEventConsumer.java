@@ -98,6 +98,7 @@ public class PaymentEventConsumer {
                 .orderId(order.getOrderId())
                 .orderNumber(order.getOrderNumber())
                 .userId(order.getUserId())
+                .addressId(order.getAddressId())
                 .couponCode(order.getCouponCode())
                 .items(itemInfos)
                 .totalAmount(order.getTotalAmount())

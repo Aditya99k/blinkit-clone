@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BlinkIt — My Wallet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { primary: '#F8C200', dark: '#1A1A1A' } } }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .wallet-card {
+      background: linear-gradient(135deg, #F8C200 0%, #FFE066 40%, #fff9e6 100%);
+    }
+    .txn-row { transition: background 0.15s; }
+    .txn-row:hover { background: #F9FAFB; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-10">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100">
+    <div class="max-w-screen-md mx-auto px-4 py-4 flex items-center gap-3">
+      <a href="home.html" class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
+        <i class="fas fa-arrow-left text-dark"></i>
+      </a>
+      <div>
+        <h1 class="font-bold text-dark text-lg">My Wallet</h1>
+        <p class="text-gray-400 text-xs">BlinkIt Pay</p>
+      </div>
+      <div class="ml-auto">
+        <button class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
+          <i class="fas fa-ellipsis-v text-gray-600"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-screen-md mx-auto px-4 py-4 space-y-5">
+
+    <!-- WALLET BALANCE CARD -->
+    <div class="wallet-card rounded-3xl p-6 shadow-xl relative overflow-hidden">
+      <!-- Decorative circles -->
+      <div class="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/20"></div>
+      <div class="absolute -bottom-12 -left-6 w-40 h-40 rounded-full bg-white/15"></div>
+      <div class="absolute top-4 right-12 w-16 h-16 rounded-full bg-white/10"></div>
+
+      <div class="relative z-10">
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <p class="text-dark/60 text-sm font-medium mb-1">Available Balance</p>
+            <p class="text-4xl font-bold text-dark leading-none">₹9,464<span class="text-2xl">.00</span></p>
+          </div>
+          <div class="w-12 h-12 bg-white/50 rounded-2xl flex items-center justify-center shadow-sm">
+            <i class="fas fa-wallet text-dark text-lg"></i>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 mb-5">
+          <div class="flex items-center gap-1.5 bg-white/40 rounded-xl px-3 py-1.5">
+            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            <span class="text-xs font-semibold text-dark">Active</span>
+          </div>
+          <div class="flex items-center gap-1.5 bg-white/40 rounded-xl px-3 py-1.5">
+            <i class="fas fa-shield-alt text-dark/60 text-xs"></i>
+            <span class="text-xs font-medium text-dark/70">UPI Linked</span>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button class="flex-1 bg-dark text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-dark/80 transition-colors shadow-md text-sm">
+            <i class="fas fa-plus text-xs"></i>
+            Add Money
+          </button>
+          <button class="flex-1 bg-white/60 hover:bg-white/80 text-dark font-bold py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors text-sm">
+            <i class="fas fa-paper-plane text-xs"></i>
+            Send Money
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK STATS -->
+    <div class="grid grid-cols-3 gap-3">
+      <div class="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-sm text-center">
+        <div class="w-8 h-8 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+          <i class="fas fa-arrow-down text-green-500 text-xs"></i>
+        </div>
+        <p class="text-sm font-bold text-dark">₹10,000</p>
+        <p class="text-xs text-gray-400 mt-0.5">Total Added</p>
+      </div>
+      <div class="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-sm text-center">
+        <div class="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+          <i class="fas fa-arrow-up text-red-400 text-xs"></i>
+        </div>
+        <p class="text-sm font-bold text-dark">₹721</p>
+        <p class="text-xs text-gray-400 mt-0.5">Total Spent</p>
+      </div>
+      <div class="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-sm text-center">
+        <div class="w-8 h-8 bg-primary/20 rounded-xl flex items-center justify-center mx-auto mb-2">
+          <i class="fas fa-undo text-yellow-600 text-xs"></i>
+        </div>
+        <p class="text-sm font-bold text-dark">₹185</p>
+        <p class="text-xs text-gray-400 mt-0.5">Refunds</p>
+      </div>
+    </div>
+
+    <!-- ADD MONEY QUICK AMOUNTS -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <h3 class="font-bold text-dark text-sm mb-3 flex items-center gap-2">
+        <i class="fas fa-plus-circle text-primary text-sm"></i>
+        Quick Add Money
+      </h3>
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="quickAdd(100)" class="px-4 py-2 border-2 border-gray-200 hover:border-primary hover:bg-yellow-50 text-dark text-sm font-semibold rounded-xl transition-all">₹100</button>
+        <button onclick="quickAdd(200)" class="px-4 py-2 border-2 border-gray-200 hover:border-primary hover:bg-yellow-50 text-dark text-sm font-semibold rounded-xl transition-all">₹200</button>
+        <button onclick="quickAdd(500)" class="px-4 py-2 border-2 border-primary bg-yellow-50 text-dark text-sm font-semibold rounded-xl">₹500</button>
+        <button onclick="quickAdd(1000)" class="px-4 py-2 border-2 border-gray-200 hover:border-primary hover:bg-yellow-50 text-dark text-sm font-semibold rounded-xl transition-all">₹1,000</button>
+      </div>
+    </div>
+
+    <!-- TRANSACTION HISTORY -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+        <h3 class="font-bold text-dark text-sm">Transaction History</h3>
+        <div class="flex gap-2">
+          <button class="text-xs text-primary font-semibold bg-primary/10 px-3 py-1 rounded-full">All</button>
+          <button class="text-xs text-gray-400 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors">Debit</button>
+          <button class="text-xs text-gray-400 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors">Credit</button>
+        </div>
+      </div>
+
+      <div id="txnList" class="divide-y divide-gray-50">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div class="px-5 py-3 border-t border-gray-50 text-center">
+        <button class="text-primary text-sm font-semibold hover:underline">Load More Transactions</button>
+      </div>
+    </div>
+
+    <!-- OFFERS SECTION -->
+    <div class="bg-gradient-to-r from-dark to-gray-800 rounded-2xl p-5 text-white">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+          <i class="fas fa-gift text-dark text-base"></i>
+        </div>
+        <div>
+          <p class="font-bold text-sm">Cashback Offer!</p>
+          <p class="text-gray-400 text-xs">Get 5% cashback on orders above ₹500</p>
+        </div>
+      </div>
+      <div class="bg-white/10 rounded-xl px-4 py-3 flex items-center justify-between">
+        <span class="font-bold text-primary tracking-widest text-sm">WALLET5</span>
+        <button class="bg-primary text-dark text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-yellow-400 transition-colors">
+          Claim Offer
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const transactions = [
+      {
+        type: 'credit',
+        icon: 'fa-gift',
+        iconBg: 'bg-green-100',
+        iconColor: 'text-green-500',
+        title: 'Welcome Bonus',
+        subtitle: 'New user signup reward',
+        date: '22 Mar 2026',
+        time: '09:00 AM',
+        amount: '+₹185.00',
+        amountColor: 'text-green-600',
+        badge: 'Bonus',
+        badgeBg: 'bg-green-100 text-green-700',
+      },
+      {
+        type: 'debit',
+        icon: 'fa-shopping-bag',
+        iconBg: 'bg-red-50',
+        iconColor: 'text-red-400',
+        title: 'Order #BLK-0015',
+        subtitle: 'Amul Butter, Brown Bread, Dahi',
+        date: '22 Mar 2026',
+        time: '10:15 AM',
+        amount: '-₹185.60',
+        amountColor: 'text-red-500',
+        badge: 'Order',
+        badgeBg: 'bg-gray-100 text-gray-600',
+      },
+      {
+        type: 'credit',
+        icon: 'fa-undo',
+        iconBg: 'bg-blue-50',
+        iconColor: 'text-blue-500',
+        title: 'Refund: Order #BLK-0013',
+        subtitle: 'Order cancelled by system',
+        date: '21 Mar 2026',
+        time: '02:30 PM',
+        amount: '+₹176.00',
+        amountColor: 'text-green-600',
+        badge: 'Refund',
+        badgeBg: 'bg-blue-100 text-blue-700',
+      },
+      {
+        type: 'debit',
+        icon: 'fa-shopping-bag',
+        iconBg: 'bg-red-50',
+        iconColor: 'text-red-400',
+        title: 'Order #BLK-0012',
+        subtitle: 'Full Cream Milk, Eggs, Snacks, Bread, Ghee',
+        date: '21 Mar 2026',
+        time: '11:45 AM',
+        amount: '-₹342.00',
+        amountColor: 'text-red-500',
+        badge: 'Order',
+        badgeBg: 'bg-gray-100 text-gray-600',
+      },
+      {
+        type: 'credit',
+        icon: 'fa-plus-circle',
+        iconBg: 'bg-primary/20',
+        iconColor: 'text-yellow-600',
+        title: 'Money Added',
+        subtitle: 'Via UPI — rahul@upi',
+        date: '20 Mar 2026',
+        time: '08:00 PM',
+        amount: '+₹10,000.00',
+        amountColor: 'text-green-600',
+        badge: 'Top-up',
+        badgeBg: 'bg-yellow-100 text-yellow-700',
+      },
+      {
+        type: 'debit',
+        icon: 'fa-shopping-bag',
+        iconBg: 'bg-red-50',
+        iconColor: 'text-red-400',
+        title: 'Order #BLK-0014',
+        subtitle: 'Amul Butter ×2',
+        date: '20 Mar 2026',
+        time: '06:20 PM',
+        amount: '-₹104.00',
+        amountColor: 'text-red-500',
+        badge: 'Order',
+        badgeBg: 'bg-gray-100 text-gray-600',
+      },
+    ];
+
+    function renderTransactions() {
+      const list = document.getElementById('txnList');
+      list.innerHTML = '';
+      transactions.forEach(txn => {
+        const div = document.createElement('div');
+        div.className = 'txn-row flex items-center gap-3.5 px-5 py-4 cursor-pointer';
+        div.innerHTML = `
+          <div class="w-11 h-11 ${txn.iconBg} rounded-2xl flex items-center justify-center shrink-0">
+            <i class="fas ${txn.icon} ${txn.iconColor} text-sm"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5">
+              <p class="font-semibold text-dark text-sm truncate">${txn.title}</p>
+              <span class="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${txn.badgeBg}">${txn.badge}</span>
+            </div>
+            <p class="text-gray-400 text-xs truncate">${txn.subtitle}</p>
+            <p class="text-gray-300 text-xs mt-0.5">${txn.date} · ${txn.time}</p>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="font-bold text-sm ${txn.amountColor}">${txn.amount}</p>
+            <p class="text-xs text-gray-400 mt-0.5">${txn.type === 'credit' ? '↑ Credit' : '↓ Debit'}</p>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function quickAdd(amount) {
+      alert(`Adding ₹${amount} to your BlinkIt Wallet via UPI...\n\n(This is a prototype — no real payment processed)`);
+    }
+
+    renderTransactions();
+  </script>
+</body>
+</html>

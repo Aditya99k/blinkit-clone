@@ -15,4 +15,6 @@ public interface OrderRepository extends MongoRepository<Order, String> {
     Page<Order> findByUserIdOrderByCreatedAtDesc(String userId, Pageable pageable);
     Page<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);
     List<Order> findByStatus(OrderStatus status);
+
+    boolean existsByUserIdAndStatusAndItemsProductId(String userId, OrderStatus status, String productId);
 }

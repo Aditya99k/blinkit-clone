@@ -1,5 +1,6 @@
 package com.blinkit.order.config;
 
+import com.blinkit.order.event.DeliveryStatusUpdatedEvent;
 import com.blinkit.order.event.PaymentFailedEvent;
 import com.blinkit.order.event.PaymentSuccessEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -40,6 +41,20 @@ public class KafkaConsumerConfig {
         ConcurrentKafkaListenerContainerFactory<String, PaymentSuccessEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(paymentSuccessConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, DeliveryStatusUpdatedEvent> deliveryStatusConsumerFactory() {
+        JsonDeserializer<DeliveryStatusUpdatedEvent> deser = new JsonDeserializer<>(DeliveryStatusUpdatedEvent.class, false);
+        return new DefaultKafkaConsumerFactory<>(baseConsumerProps(), new StringDeserializer(), deser);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, DeliveryStatusUpdatedEvent> deliveryStatusKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, DeliveryStatusUpdatedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(deliveryStatusConsumerFactory());
         return factory;
     }
 

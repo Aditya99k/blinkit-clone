@@ -16,6 +16,7 @@ public class OrderConfirmedEvent {
     private String orderId;
     private String orderNumber;
     private String userId;
+    private String addressId;
     private String couponCode;
     private List<OrderItemInfo> items;
     private double totalAmount;

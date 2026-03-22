@@ -47,9 +47,11 @@
         <module>payment-service</module>
         <module>order-service</module>
 
-        <!-- Stage 7 — Delivery & Reviews -->
-        <!-- <module>delivery-service</module> -->
-        <!-- <module>review-service</module> -->
+        <!-- Stage 6 — Delivery -->
+        <module>delivery-service</module>
+
+        <!-- Stage 7 — Reviews -->
+        <module>review-service</module>
     </modules>
 
     <!-- ─── Global Properties ────────────────────────────────────── -->

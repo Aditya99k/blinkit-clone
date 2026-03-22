@@ -1,0 +1,19 @@
+server:
+  port: 8091
+
+spring:
+  application:
+    name: review-service
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+      database: review_db
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
+      - configserver:http://${CONFIG_SERVER_HOST:localhost}:${CONFIG_SERVER_PORT:8888}
+
+feign:
+  circuitbreaker:
+    enabled: true
