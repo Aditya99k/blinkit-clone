@@ -14,6 +14,7 @@ public enum ApiResponseCode {
     LOGIN_SUCCESS(HttpStatus.OK, "Login successful"),
     TOKEN_REFRESHED(HttpStatus.OK, "Token refreshed"),
     LOGOUT_SUCCESS(HttpStatus.OK, "Logged out successfully"),
+    ACCOUNT_DELETED(HttpStatus.OK, "Account deleted successfully"),
     PASSWORD_RESET_LINK_SENT(HttpStatus.OK, "Password reset link sent to your email"),
     RESET_TOKEN_VALID(HttpStatus.OK, "Token is valid"),
     PASSWORD_RESET_SUCCESS(HttpStatus.OK, "Password reset successfully. Please login with your new password."),
@@ -45,6 +46,42 @@ public enum ApiResponseCode {
     STOCK_RELEASED(HttpStatus.OK, "Stock released"),
     STOCK_CONFIRMED(HttpStatus.OK, "Stock confirmed"),
 
+    // ── Coupon ────────────────────────────────────────────────────────
+    COUPON_CREATED(HttpStatus.CREATED, "Coupon created"),
+    COUPONS_FETCHED(HttpStatus.OK, "Coupons fetched"),
+    COUPON_FETCHED(HttpStatus.OK, "Coupon fetched"),
+    COUPON_UPDATED(HttpStatus.OK, "Coupon updated"),
+    COUPON_DELETED(HttpStatus.OK, "Coupon deleted"),
+    ACTIVE_COUPONS_FETCHED(HttpStatus.OK, "Active coupons fetched"),
+    COUPON_USAGE_RECORDED(HttpStatus.OK, "Coupon usage recorded"),
+
+    // ── Cart ──────────────────────────────────────────────────────────
+    CART_FETCHED(HttpStatus.OK, "Cart fetched"),
+    CART_CLEARED(HttpStatus.OK, "Cart cleared"),
+    ITEM_ADDED(HttpStatus.OK, "Item added to cart"),
+    ITEM_UPDATED(HttpStatus.OK, "Cart item updated"),
+    ITEM_REMOVED(HttpStatus.OK, "Item removed from cart"),
+    PROMO_APPLIED(HttpStatus.OK, "Promo code applied"),
+    PROMO_REMOVED(HttpStatus.OK, "Promo code removed"),
+    CART_COUNT_FETCHED(HttpStatus.OK, "Cart count fetched"),
+
+    // ── Order ─────────────────────────────────────────────────────────
+    ORDER_PLACED(HttpStatus.CREATED, "Order placed successfully"),
+    ORDERS_FETCHED(HttpStatus.OK, "Orders fetched"),
+    ORDER_FETCHED(HttpStatus.OK, "Order fetched"),
+    ORDER_CANCELLED(HttpStatus.OK, "Order cancelled successfully"),
+    ORDER_STATUS_UPDATED(HttpStatus.OK, "Order status updated"),
+
+    // ── Payment / Wallet ──────────────────────────────────────────────
+    WALLET_FETCHED(HttpStatus.OK, "Wallet details fetched"),
+    WALLETS_FETCHED(HttpStatus.OK, "Wallets fetched"),
+    TRANSACTION_HISTORY_FETCHED(HttpStatus.OK, "Transaction history fetched"),
+    TRANSACTION_FETCHED(HttpStatus.OK, "Transaction fetched"),
+    TRANSACTIONS_FETCHED(HttpStatus.OK, "Transactions fetched"),
+    PAYMENT_SUCCESS(HttpStatus.OK, "Payment successful"),
+    REFUND_SUCCESS(HttpStatus.OK, "Refund processed successfully"),
+    WALLET_TOPUP_SUCCESS(HttpStatus.OK, "Wallet topped up successfully"),
+
     // ── 4xx Errors ────────────────────────────────────────────────────
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "Validation failed"),
     INVALID_OTP(HttpStatus.BAD_REQUEST, "Invalid or expired OTP"),
@@ -68,7 +105,18 @@ public enum ApiResponseCode {
     PRODUCT_SLUG_EXISTS(HttpStatus.CONFLICT, "Product with this slug already exists"),
     CATEGORY_NAME_EXISTS(HttpStatus.CONFLICT, "Category with this name already exists"),
     INSUFFICIENT_STOCK(HttpStatus.CONFLICT, "Insufficient stock"),
+    COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "Coupon not found"),
+    COUPON_CODE_EXISTS(HttpStatus.CONFLICT, "Coupon with this code already exists"),
+    COUPON_INVALID(HttpStatus.BAD_REQUEST, "Coupon is invalid or not applicable"),
+    PRODUCT_UNAVAILABLE(HttpStatus.CONFLICT, "Product is not available"),
+    MAX_QUANTITY_EXCEEDED(HttpStatus.BAD_REQUEST, "Maximum quantity per item is 10"),
     RESET_TOKEN_EXPIRED(HttpStatus.GONE, "Reset token expired or invalid"),
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "Order not found"),
+    WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "Wallet not found"),
+    TRANSACTION_NOT_FOUND(HttpStatus.NOT_FOUND, "Transaction not found"),
+    ORDER_CANNOT_CANCEL(HttpStatus.BAD_REQUEST, "Order cannot be cancelled in its current status"),
+    INSUFFICIENT_WALLET_BALANCE(HttpStatus.BAD_REQUEST, "Insufficient wallet balance"),
+    CART_EMPTY(HttpStatus.BAD_REQUEST, "Cart is empty"),
 
     // ── 5xx Errors ────────────────────────────────────────────────────
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred. Please try again later.");

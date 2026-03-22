@@ -9,4 +9,5 @@ public interface AuthUserRepository extends MongoRepository<AuthUser, String> {
     Optional<AuthUser> findByEmail(String email);
     boolean existsByEmail(String email);
     Optional<AuthUser> findByUserId(String userId);
+    void deleteByUserId(String userId);
 }

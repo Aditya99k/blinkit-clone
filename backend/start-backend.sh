@@ -101,21 +101,21 @@ wait_for_port "eureka-server" 8761
 start_service "config-server" "$JAR_DIR/config-server/target/config-server-1.0.0-SNAPSHOT.jar"
 wait_for_port "config-server" 8888
 
-# ── Step 3: Start API Gateway ────────────────────────────────────
-start_service "api-gateway" "$JAR_DIR/api-gateway/target/api-gateway-1.0.0-SNAPSHOT.jar"
-wait_for_port "api-gateway" 8080
-
-# ── Step 4: Start Auth Service ────────────────────────────────────
+# ── Step 3: Start Auth Service ────────────────────────────────────
 start_service "auth-service" "$JAR_DIR/auth-service/target/auth-service-1.0.0-SNAPSHOT.jar"
 wait_for_port "auth-service" 8081
 
-# ── Step 5: Start User Service ────────────────────────────────────
+# ── Step 4: Start User Service ────────────────────────────────────
 start_service "user-service" "$JAR_DIR/user-service/target/user-service-1.0.0-SNAPSHOT.jar"
 wait_for_port "user-service" 8082
 
-# ── Step 6: Start Notification Service ───────────────────────────
+# ── Step 5: Start Notification Service ───────────────────────────
 start_service "notification-service" "$JAR_DIR/notification-service/target/notification-service-1.0.0-SNAPSHOT.jar"
 wait_for_port "notification-service" 8089
+
+# ── Step 6: Start API Gateway (after core services are registered) ─
+start_service "api-gateway" "$JAR_DIR/api-gateway/target/api-gateway-1.0.0-SNAPSHOT.jar"
+wait_for_port "api-gateway" 8080
 
 # ── Step 7: Start Product Service ────────────────────────────────
 start_service "product-service" "$JAR_DIR/product-service/target/product-service-1.0.0-SNAPSHOT.jar"
@@ -124,6 +124,30 @@ wait_for_port "product-service" 8083
 # ── Step 8: Start Inventory Service ──────────────────────────────
 start_service "inventory-service" "$JAR_DIR/inventory-service/target/inventory-service-1.0.0-SNAPSHOT.jar"
 wait_for_port "inventory-service" 8084
+
+# ── Step 9: Start Coupon Service ──────────────────────────────────
+start_service "coupon-service" "$JAR_DIR/coupon-service/target/coupon-service-1.0.0-SNAPSHOT.jar"
+wait_for_port "coupon-service" 8090
+
+# ── Step 10: Start Cart Service ───────────────────────────────────
+start_service "cart-service" "$JAR_DIR/cart-service/target/cart-service-1.0.0-SNAPSHOT.jar"
+wait_for_port "cart-service" 8087
+
+# ── Step 11: Start Payment Service ────────────────────────────────
+start_service "payment-service" "$JAR_DIR/payment-service/target/payment-service-1.0.0-SNAPSHOT.jar"
+wait_for_port "payment-service" 8086
+
+# ── Step 12: Start Order Service ──────────────────────────────────
+start_service "order-service" "$JAR_DIR/order-service/target/order-service-1.0.0-SNAPSHOT.jar"
+wait_for_port "order-service" 8085
+
+# ── Step 13: Start Delivery Service ───────────────────────────────
+start_service "delivery-service" "$JAR_DIR/delivery-service/target/delivery-service-1.0.0-SNAPSHOT.jar"
+wait_for_port "delivery-service" 8088
+
+# ── Step 14: Start Review Service ─────────────────────────────────
+start_service "review-service" "$JAR_DIR/review-service/target/review-service-1.0.0-SNAPSHOT.jar"
+wait_for_port "review-service" 8091
 
 # ── Done ─────────────────────────────────────────────────────────
 echo ""
@@ -137,6 +161,12 @@ echo "   User Service      →  http://localhost:8082/swagger-ui.html"
 echo "   Notification Svc  →  http://localhost:8089/actuator/health"
 echo "   Product Service   →  http://localhost:8083/swagger-ui.html"
 echo "   Inventory Service →  http://localhost:8084/swagger-ui.html"
+echo "   Coupon Service    →  http://localhost:8090/swagger-ui.html"
+echo "   Cart Service      →  http://localhost:8087/swagger-ui.html"
+echo "   Payment Service   →  http://localhost:8086/swagger-ui.html"
+echo "   Order Service     →  http://localhost:8085/swagger-ui.html"
+echo "   Delivery Service  →  http://localhost:8088/actuator/health"
+echo "   Review Service    →  http://localhost:8091/swagger-ui.html"
 echo "   Kafka UI          →  http://localhost:9093"
 echo "   Redis Commander   →  http://localhost:9191"
 echo ""

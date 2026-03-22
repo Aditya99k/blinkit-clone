@@ -1,0 +1,15 @@
+spring:
+  config:
+    import: ""
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+
+delivery:
+  store:
+    name: "Test Store"
+    address: "Test Address"
+    lat: 12.9352
+    lng: 77.6245

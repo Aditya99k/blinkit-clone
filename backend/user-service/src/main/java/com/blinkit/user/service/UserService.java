@@ -99,6 +99,12 @@ public class UserService {
         addressRepo.deleteByAddressIdAndUserId(addressId, userId);
     }
 
+    public void deleteUserData(String userId) {
+        profileRepo.deleteByUserId(userId);
+        addressRepo.deleteByUserId(userId);
+        log.info("Hard deleted profile and addresses for userId={}", userId);
+    }
+
     public Address setDefaultAddress(String userId, String addressId) {
         List<Address> all = addressRepo.findByUserId(userId);
         // Clear current default

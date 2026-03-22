@@ -40,16 +40,18 @@
         <module>inventory-service</module>
 
         <!-- Stage 4 — Cart & Coupons -->
-        <!-- <module>cart-service</module> -->
-        <!-- <module>coupon-service</module> -->
+        <module>coupon-service</module>
+        <module>cart-service</module>
 
         <!-- Stage 5 — Orders & Payments -->
-        <!-- <module>order-service</module> -->
-        <!-- <module>payment-service</module> -->
+        <module>payment-service</module>
+        <module>order-service</module>
 
-        <!-- Stage 7 — Delivery & Reviews -->
-        <!-- <module>delivery-service</module> -->
-        <!-- <module>review-service</module> -->
+        <!-- Stage 6 — Delivery -->
+        <module>delivery-service</module>
+
+        <!-- Stage 7 — Reviews -->
+        <module>review-service</module>
     </modules>
 
     <!-- ─── Global Properties ────────────────────────────────────── -->

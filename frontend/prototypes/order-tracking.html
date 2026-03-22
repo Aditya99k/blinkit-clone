@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BlinkIt — Order Tracking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { primary: '#F8C200', dark: '#1A1A1A' } } }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(248, 194, 0, 0.5); }
+      70% { box-shadow: 0 0 0 8px rgba(248, 194, 0, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(248, 194, 0, 0); }
+    }
+    .pulse-active { animation: pulse-ring 1.5s ease infinite; }
+    @keyframes spin-slow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .spin-slow { animation: spin-slow 1.5s linear infinite; }
+    @keyframes eta-update {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .eta-blink { animation: eta-update 2s ease-in-out infinite; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-24">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100">
+    <div class="max-w-screen-md mx-auto px-4 py-4 flex items-center gap-3">
+      <a href="home.html" class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
+        <i class="fas fa-times text-dark"></i>
+      </a>
+      <div>
+        <h1 class="font-bold text-dark text-lg">Order Tracking</h1>
+        <p class="text-gray-500 text-xs">BLK-20260322-0015</p>
+      </div>
+      <div class="ml-auto">
+        <button class="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
+          <i class="fas fa-headset text-xs"></i> Help
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-screen-md mx-auto px-4 py-4 space-y-4">
+
+    <!-- SUCCESS BANNER -->
+    <div class="bg-gradient-to-r from-green-500 to-green-400 rounded-2xl p-5 text-white shadow-lg">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+          <i class="fas fa-check text-white text-xl"></i>
+        </div>
+        <div>
+          <p class="font-bold text-lg leading-tight">Order Placed Successfully!</p>
+          <p class="text-green-100 text-sm">Order #BLK-20260322-0015</p>
+        </div>
+      </div>
+      <div class="bg-white/15 rounded-xl p-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-wallet text-white"></i>
+          <span class="text-sm font-medium">₹185.60 debited from wallet</span>
+        </div>
+        <span class="text-xs bg-white/20 px-2 py-1 rounded-lg font-medium">Instant</span>
+      </div>
+    </div>
+
+    <!-- ETA CARD -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-500 text-xs font-medium mb-1">Estimated Delivery</p>
+          <p class="font-bold text-dark text-2xl eta-blink" id="etaTime">8-12 min</p>
+          <p class="text-gray-400 text-xs mt-0.5">To Koramangala, Bangalore</p>
+        </div>
+        <div class="relative">
+          <div class="w-16 h-16 rounded-full border-4 border-primary flex items-center justify-center">
+            <span class="text-2xl">🛵</span>
+          </div>
+          <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <i class="fas fa-bolt text-white text-xs"></i>
+          </div>
+        </div>
+      </div>
+      <div class="mt-3 pt-3 border-t border-gray-50">
+        <div class="w-full bg-gray-100 rounded-full h-2">
+          <div id="progressBar" class="h-2 rounded-full bg-gradient-to-r from-primary to-yellow-400 transition-all duration-1000" style="width: 45%"></div>
+        </div>
+        <div class="flex justify-between mt-1.5">
+          <span class="text-xs text-gray-400">Ordered</span>
+          <span class="text-xs text-primary font-semibold">Packing</span>
+          <span class="text-xs text-gray-400">On way</span>
+          <span class="text-xs text-gray-400">Delivered</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS TIMELINE -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-50">
+        <h2 class="font-bold text-dark text-sm">Order Status</h2>
+      </div>
+      <div class="p-4">
+        <div class="relative">
+          <!-- Vertical line -->
+          <div class="absolute left-4 top-4 bottom-4 w-0.5 bg-gray-100"></div>
+
+          <div class="space-y-5" id="timeline">
+            <!-- Steps rendered by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DELIVERY PARTNER -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <h2 class="font-bold text-dark text-sm mb-3 flex items-center gap-2">
+        <i class="fas fa-user text-primary"></i>
+        Delivery Partner
+      </h2>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center">
+            <span class="text-white font-bold text-base">RK</span>
+          </div>
+          <div>
+            <p class="font-bold text-dark text-sm">Rahul K.</p>
+            <div class="flex items-center gap-1 mt-0.5">
+              <i class="fas fa-star text-primary text-xs"></i>
+              <span class="text-xs text-dark font-semibold">4.8</span>
+              <span class="text-xs text-gray-400">· 24 deliveries today</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors">
+            <i class="fas fa-phone text-dark text-sm"></i>
+          </button>
+          <button class="w-10 h-10 bg-primary hover:bg-yellow-400 rounded-xl flex items-center justify-center transition-colors">
+            <i class="fas fa-comment text-dark text-sm"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDER ITEMS -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-50 flex justify-between items-center">
+        <h2 class="font-bold text-dark text-sm">Order Items (3)</h2>
+        <span class="text-xs text-gray-400">₹185.60 total</span>
+      </div>
+      <div class="divide-y divide-gray-50">
+        <div class="flex items-center gap-3 px-4 py-3">
+          <div class="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center text-xl shrink-0">🧈</div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-dark">Amul Butter 500g</p>
+            <p class="text-xs text-gray-400">×2</p>
+          </div>
+          <span class="font-semibold text-dark text-sm">₹104</span>
+        </div>
+        <div class="flex items-center gap-3 px-4 py-3">
+          <div class="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-xl shrink-0">🍞</div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-dark">Brown Bread 400g</p>
+            <p class="text-xs text-gray-400">×1</p>
+          </div>
+          <span class="font-semibold text-dark text-sm">₹35</span>
+        </div>
+        <div class="flex items-center gap-3 px-4 py-3">
+          <div class="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-xl shrink-0">🍶</div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-dark">Dahi (Curd) 400g</p>
+            <p class="text-xs text-gray-400">×1</p>
+          </div>
+          <span class="font-semibold text-dark text-sm">₹45</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CANCEL & CONTINUE -->
+    <div class="grid grid-cols-2 gap-3">
+      <button id="cancelBtn"
+        class="border-2 border-red-300 text-red-400 font-semibold py-3 rounded-2xl hover:bg-red-50 transition-all text-sm"
+        onclick="cancelOrder()">
+        <i class="fas fa-times mr-1.5"></i>Cancel Order
+      </button>
+      <a href="home.html"
+        class="bg-primary hover:bg-yellow-400 text-dark font-bold py-3 rounded-2xl transition-all text-sm text-center flex items-center justify-center gap-1.5 shadow-md">
+        Continue Shopping
+        <i class="fas fa-arrow-right text-xs"></i>
+      </a>
+    </div>
+
+    <!-- AUTO REFRESH NOTICE -->
+    <div class="text-center pb-2">
+      <p class="text-gray-400 text-xs flex items-center justify-center gap-1.5">
+        <span class="spin-slow inline-block text-primary">⟳</span>
+        Auto-refreshing status every 10s
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+    const steps = [
+      { label: 'Order Placed',       time: '10:15 AM', icon: 'fa-check',          status: 'done' },
+      { label: 'Payment Confirmed',  time: '10:15 AM', icon: 'fa-check',          status: 'done' },
+      { label: 'Order Confirmed',    time: '10:16 AM', icon: 'fa-check',          status: 'done' },
+      { label: 'Being Packed',       time: 'In progress...', icon: 'fa-box-open', status: 'active' },
+      { label: 'Assigned to Agent',  time: 'Pending',   icon: 'fa-user',          status: 'pending' },
+      { label: 'Out for Delivery',   time: 'Pending',   icon: 'fa-motorcycle',    status: 'pending' },
+      { label: 'Delivered',          time: 'Pending',   icon: 'fa-home',          status: 'pending' },
+    ];
+
+    function renderTimeline() {
+      const container = document.getElementById('timeline');
+      container.innerHTML = '';
+      steps.forEach((step, i) => {
+        const div = document.createElement('div');
+        div.className = 'flex items-start gap-4 relative';
+
+        let circleClass, iconClass, labelClass, timeClass;
+        if (step.status === 'done') {
+          circleClass = 'w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0 z-10';
+          iconClass = 'fas ' + step.icon + ' text-white text-xs';
+          labelClass = 'font-semibold text-dark text-sm';
+          timeClass = 'text-xs text-gray-400';
+        } else if (step.status === 'active') {
+          circleClass = 'w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 z-10 pulse-active';
+          iconClass = 'fas ' + step.icon + ' text-dark text-xs spin-slow';
+          labelClass = 'font-bold text-dark text-sm';
+          timeClass = 'text-xs text-primary font-semibold';
+        } else {
+          circleClass = 'w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center shrink-0 z-10';
+          iconClass = 'fas ' + step.icon + ' text-gray-400 text-xs';
+          labelClass = 'font-medium text-gray-400 text-sm';
+          timeClass = 'text-xs text-gray-300';
+        }
+
+        div.innerHTML = `
+          <div class="${circleClass}">
+            <i class="${iconClass}"></i>
+          </div>
+          <div class="flex-1 pt-0.5">
+            <div class="flex items-center justify-between">
+              <p class="${labelClass}">${step.label}</p>
+              <span class="${timeClass}">${step.time}</span>
+            </div>
+            ${step.status === 'active' ? '<div class="flex items-center gap-1.5 mt-1"><div class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style="animation-delay:0s"></div><div class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style="animation-delay:0.2s"></div><div class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style="animation-delay:0.4s"></div><span class="text-xs text-primary font-medium">Working on your order</span></div>' : ''}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function cancelOrder() {
+      const btn = document.getElementById('cancelBtn');
+      btn.disabled = true;
+      btn.className = 'border-2 border-gray-200 text-gray-400 font-semibold py-3 rounded-2xl text-sm cursor-not-allowed opacity-50';
+      btn.innerHTML = '<i class="fas fa-ban mr-1.5"></i>Cannot Cancel';
+      alert('Order cannot be cancelled once it is being packed.');
+    }
+
+    renderTimeline();
+
+    // Auto progress simulation
+    let progressVal = 45;
+    setInterval(() => {
+      progressVal = Math.min(progressVal + 2, 95);
+      document.getElementById('progressBar').style.width = progressVal + '%';
+    }, 10000);
+  </script>
+</body>
+</html>

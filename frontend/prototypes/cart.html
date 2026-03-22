@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BlinkIt — My Cart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { primary: '#F8C200', dark: '#1A1A1A' } } }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100">
+    <div class="max-w-screen-md mx-auto px-4 py-4 flex items-center gap-3">
+      <a href="home.html" class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
+        <i class="fas fa-arrow-left text-dark"></i>
+      </a>
+      <div>
+        <h1 class="font-bold text-dark text-lg leading-tight">My Cart</h1>
+        <p id="itemCountLabel" class="text-gray-500 text-xs">3 items</p>
+      </div>
+      <div class="ml-auto">
+        <div class="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 px-3 py-1.5 rounded-xl">
+          <i class="fas fa-bolt text-green-500 text-xs"></i>
+          <span class="text-green-600 text-xs font-semibold">~10 min delivery</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-screen-md mx-auto px-4 py-4 space-y-4">
+
+    <!-- CART ITEMS -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div id="cartItemsList" class="divide-y divide-gray-50"></div>
+
+      <!-- Empty cart -->
+      <div id="emptyCart" class="hidden py-16 text-center">
+        <div class="text-6xl mb-4">🛒</div>
+        <h3 class="font-bold text-dark text-lg mb-1">Your cart is empty</h3>
+        <p class="text-gray-500 text-sm mb-5">Looks like you haven't added anything yet</p>
+        <a href="home.html" class="inline-block bg-primary text-dark font-bold px-6 py-2.5 rounded-xl hover:bg-yellow-400 transition-colors text-sm">
+          Start Shopping
+        </a>
+      </div>
+    </div>
+
+    <!-- FREE DELIVERY PROGRESS -->
+    <div id="freeDeliveryBanner" class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-motorcycle text-primary"></i>
+          <span id="deliveryText" class="text-sm font-semibold text-dark"></span>
+        </div>
+        <span class="text-xs text-gray-500" id="deliverySubtext"></span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div id="deliveryProgress" class="bg-primary h-2 rounded-full transition-all duration-500"></div>
+      </div>
+    </div>
+
+    <!-- PROMO CODE -->
+    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+      <h3 class="font-bold text-dark text-sm mb-3 flex items-center gap-2">
+        <i class="fas fa-tag text-primary"></i>
+        Apply Promo Code
+      </h3>
+      <div class="flex gap-2">
+        <div class="relative flex-1">
+          <input id="promoInput" type="text" placeholder="Enter promo code"
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-gray-50 uppercase tracking-widest font-medium transition-all" />
+        </div>
+        <button onclick="applyPromo()"
+          class="px-5 py-3 bg-dark text-white text-sm font-bold rounded-xl hover:bg-dark/80 transition-colors whitespace-nowrap">
+          APPLY
+        </button>
+      </div>
+      <!-- Promo states -->
+      <div id="promoSuccess" class="hidden mt-3 flex items-center gap-2 text-green-600">
+        <div class="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
+          <i class="fas fa-check text-xs"></i>
+        </div>
+        <span class="text-sm font-semibold">Promo "SAVE10" applied! You save ₹<span id="discountAmount"></span></span>
+      </div>
+      <div id="promoError" class="hidden mt-3 flex items-center gap-2 text-red-500">
+        <i class="fas fa-times-circle text-sm"></i>
+        <span class="text-sm">Invalid promo code. Try SAVE10</span>
+      </div>
+    </div>
+
+    <!-- BILL SUMMARY -->
+    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+      <h3 class="font-bold text-dark text-sm mb-3 flex items-center gap-2">
+        <i class="fas fa-receipt text-primary"></i>
+        Bill Summary
+      </h3>
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-gray-600 text-sm">Items Total</span>
+          <span id="billItems" class="font-semibold text-dark text-sm">₹0</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-gray-600 text-sm flex items-center gap-1">
+            <i class="fas fa-motorcycle text-xs text-gray-400"></i>
+            Delivery Fee
+          </span>
+          <span id="billDelivery" class="font-semibold text-dark text-sm">₹20</span>
+        </div>
+        <div id="billDiscountRow" class="hidden flex items-center justify-between">
+          <span class="text-green-600 text-sm">Discount (SAVE10)</span>
+          <span id="billDiscount" class="font-semibold text-green-600 text-sm">-₹0</span>
+        </div>
+        <div class="border-t border-dashed border-gray-200 pt-2.5 flex items-center justify-between">
+          <span class="font-bold text-dark">To Pay</span>
+          <span id="billTotal" class="font-bold text-dark text-lg">₹0</span>
+        </div>
+      </div>
+
+      <!-- Savings badge -->
+      <div id="savingsBadge" class="hidden mt-3 px-3 py-2 bg-green-50 rounded-xl border border-green-200">
+        <p class="text-green-600 text-xs font-semibold text-center">
+          <i class="fas fa-piggy-bank mr-1"></i>
+          Total savings: ₹<span id="totalSavings">0</span> on this order
+        </p>
+      </div>
+    </div>
+
+    <!-- DELIVERY ESTIMATE -->
+    <div class="bg-gradient-to-r from-dark to-gray-800 rounded-2xl p-4 text-white flex items-center gap-3">
+      <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shrink-0">
+        <i class="fas fa-bolt text-dark text-base"></i>
+      </div>
+      <div>
+        <p class="font-bold text-sm">Express Delivery</p>
+        <p class="text-gray-400 text-xs">Estimated: 8-12 minutes to Koramangala</p>
+      </div>
+    </div>
+
+    <!-- CHECKOUT BUTTON -->
+    <div class="pb-2">
+      <a href="checkout.html" id="checkoutBtn"
+        class="flex items-center justify-between bg-primary hover:bg-yellow-400 text-dark font-bold py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 w-full">
+        <div>
+          <p class="text-base font-bold">Proceed to Checkout</p>
+          <p class="text-xs font-normal opacity-70 mt-0.5" id="checkoutSubtext">3 items · ₹0</p>
+        </div>
+        <i class="fas fa-arrow-right text-dark text-base"></i>
+      </a>
+    </div>
+
+  </div>
+
+  <script>
+    const VALID_PROMO = 'SAVE10';
+    const DELIVERY_FEE = 20;
+    const FREE_DELIVERY_THRESHOLD = 199;
+    let promoApplied = false;
+    let discountAmt = 0;
+
+    // Default cart items
+    let cartItems = [
+      { id: 1, emoji: '🧈', name: 'Amul Butter', unit: '500g', price: 52, qty: 2, bg: 'bg-yellow-50' },
+      { id: 2, emoji: '🍞', name: 'Brown Bread', unit: '400g', price: 35, qty: 1, bg: 'bg-orange-50' },
+      { id: 7, emoji: '🍶', name: 'Dahi (Curd)', unit: '400g', price: 45, qty: 1, bg: 'bg-purple-50' },
+    ];
+
+    // Try to load from localStorage
+    const saved = localStorage.getItem('blinkitCart');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const keys = Object.keys(parsed);
+        if (keys.length > 0) {
+          cartItems = keys.map(k => ({ ...parsed[k] }));
+        }
+      } catch(e) {}
+    }
+
+    function getSubtotal() {
+      return cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+    }
+
+    function renderCart() {
+      const list = document.getElementById('cartItemsList');
+      const empty = document.getElementById('emptyCart');
+      list.innerHTML = '';
+
+      if (cartItems.length === 0) {
+        empty.classList.remove('hidden');
+        document.getElementById('checkoutBtn').classList.add('pointer-events-none', 'opacity-50');
+      } else {
+        empty.classList.add('hidden');
+        document.getElementById('checkoutBtn').classList.remove('pointer-events-none', 'opacity-50');
+        cartItems.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'flex items-center gap-3 p-4';
+          row.innerHTML = `
+            <div class="${item.bg} rounded-xl w-16 h-16 flex items-center justify-center text-3xl shrink-0">${item.emoji}</div>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-dark text-sm">${item.name}</p>
+              <p class="text-gray-400 text-xs">${item.unit} · ₹${item.price} each</p>
+              <p class="font-bold text-dark text-sm mt-0.5">₹${item.price * item.qty}</p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <button onclick="removeItem(${item.id})" class="text-gray-300 hover:text-red-400 transition-colors">
+                <i class="fas fa-trash-alt text-xs"></i>
+              </button>
+              <div class="flex items-center gap-0 bg-primary rounded-xl overflow-hidden">
+                <button onclick="changeQty(${item.id},-1)" class="px-2.5 py-1.5 text-dark font-bold text-sm hover:bg-yellow-400 transition-colors">−</button>
+                <span class="px-2 font-bold text-dark text-sm">${item.qty}</span>
+                <button onclick="changeQty(${item.id},1)" class="px-2.5 py-1.5 text-dark font-bold text-sm hover:bg-yellow-400 transition-colors">+</button>
+              </div>
+            </div>
+          `;
+          list.appendChild(row);
+        });
+      }
+
+      updateBill();
+    }
+
+    function changeQty(id, delta) {
+      const item = cartItems.find(i => i.id === id);
+      if (!item) return;
+      item.qty += delta;
+      if (item.qty <= 0) {
+        cartItems = cartItems.filter(i => i.id !== id);
+      }
+      promoApplied = false;
+      discountAmt = 0;
+      document.getElementById('promoSuccess').classList.add('hidden');
+      document.getElementById('promoInput').value = '';
+      document.getElementById('billDiscountRow').classList.add('hidden');
+      renderCart();
+    }
+
+    function removeItem(id) {
+      cartItems = cartItems.filter(i => i.id !== id);
+      renderCart();
+    }
+
+    function updateBill() {
+      const subtotal = getSubtotal();
+      const totalItems = cartItems.reduce((s,i) => s + i.qty, 0);
+      document.getElementById('itemCountLabel').textContent = totalItems + (totalItems === 1 ? ' item' : ' items');
+
+      // Delivery fee
+      const deliveryFree = subtotal >= FREE_DELIVERY_THRESHOLD;
+      const delivery = deliveryFree ? 0 : DELIVERY_FEE;
+      const billDeliveryEl = document.getElementById('billDelivery');
+      if (deliveryFree) {
+        billDeliveryEl.innerHTML = '<span class="text-green-600 font-semibold text-sm">FREE</span>';
+      } else {
+        billDeliveryEl.textContent = '₹' + delivery;
+      }
+
+      // Delivery progress
+      const pct = Math.min((subtotal / FREE_DELIVERY_THRESHOLD) * 100, 100);
+      document.getElementById('deliveryProgress').style.width = pct + '%';
+      if (deliveryFree) {
+        document.getElementById('deliveryText').textContent = '🎉 Free delivery unlocked!';
+        document.getElementById('deliverySubtext').textContent = '';
+      } else {
+        const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
+        document.getElementById('deliveryText').textContent = `Add ₹${remaining} more for free delivery`;
+        document.getElementById('deliverySubtext').textContent = `₹${subtotal} / ₹${FREE_DELIVERY_THRESHOLD}`;
+      }
+
+      // Discount
+      if (promoApplied) {
+        discountAmt = Math.round(subtotal * 0.1 * 10) / 10;
+        document.getElementById('billDiscountRow').classList.remove('hidden');
+        document.getElementById('billDiscount').textContent = '-₹' + discountAmt.toFixed(2);
+        document.getElementById('discountAmount').textContent = discountAmt.toFixed(2);
+      }
+
+      const total = subtotal + delivery - discountAmt;
+      document.getElementById('billItems').textContent = '₹' + subtotal.toFixed(2);
+      document.getElementById('billTotal').textContent = '₹' + total.toFixed(2);
+      document.getElementById('checkoutSubtext').textContent = totalItems + ' items · ₹' + total.toFixed(2);
+
+      // Savings
+      if (discountAmt > 0 || deliveryFree) {
+        const savings = discountAmt + (deliveryFree ? DELIVERY_FEE : 0);
+        document.getElementById('savingsBadge').classList.remove('hidden');
+        document.getElementById('totalSavings').textContent = savings.toFixed(2);
+      } else {
+        document.getElementById('savingsBadge').classList.add('hidden');
+      }
+    }
+
+    function applyPromo() {
+      const code = document.getElementById('promoInput').value.trim().toUpperCase();
+      document.getElementById('promoSuccess').classList.add('hidden');
+      document.getElementById('promoError').classList.add('hidden');
+
+      if (code === VALID_PROMO) {
+        promoApplied = true;
+        document.getElementById('promoSuccess').classList.remove('hidden');
+        renderCart();
+      } else {
+        promoApplied = false;
+        discountAmt = 0;
+        document.getElementById('promoError').classList.remove('hidden');
+        renderCart();
+      }
+    }
+
+    // Allow pressing Enter for promo
+    document.getElementById('promoInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') applyPromo();
+    });
+
+    renderCart();
+  </script>
+</body>
+</html>
