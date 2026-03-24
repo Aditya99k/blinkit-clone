@@ -26,16 +26,31 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# ── Load .env ────────────────────────────────────────────────────
-ENV_FILE="$SCRIPT_DIR/.env"
+# ── Load .env (profile-aware) ────────────────────────────────────
+# Honour the same profile as start-backend.sh
+PROFILE="${PROFILE:-dev}"
+ENV_FILE="$SCRIPT_DIR/.env.$PROFILE"
 if [ ! -f "$ENV_FILE" ]; then
-  echo -e "${RED}[ERROR]${NC} .env not found at ${ENV_FILE}"
+  ENV_FILE="$SCRIPT_DIR/.env"   # fallback
+fi
+if [ ! -f "$ENV_FILE" ]; then
+  echo -e "${RED}[ERROR]${NC} No env file found (tried .env.$PROFILE and .env)"
   exit 1
 fi
+echo -e "${BLUE}[INFO]${NC} Using env file: $ENV_FILE"
 
 # Read vars safely — handles special chars (&, ?, =) in values like MONGO_URI
+# Also strips surrounding quotes (single or double) added for shell safety
 _get_env() {
-  grep "^${1}=" "$ENV_FILE" | head -1 | cut -d'=' -f2-
+  local raw
+  raw=$(grep "^${1}=" "$ENV_FILE" | head -1 | cut -d'=' -f2-)
+  # Strip surrounding double quotes
+  raw="${raw%\"}"
+  raw="${raw#\"}"
+  # Strip surrounding single quotes
+  raw="${raw%\'}"
+  raw="${raw#\'}"
+  echo "$raw"
 }
 
 MONGO_URI=$(_get_env "MONGO_URI")
@@ -152,6 +167,10 @@ REDIS_VALUE="blinkit-connectivity-ok"
 REDIS_ARGS="-h ${REDIS_HOST} -p ${REDIS_PORT}"
 if [ -n "$REDIS_PASS" ]; then
   REDIS_ARGS="${REDIS_ARGS} -a ${REDIS_PASS}"
+fi
+# Upstash and other cloud Redis require TLS — detect by non-localhost host
+if [ "${REDIS_HOST}" != "localhost" ] && [ "${REDIS_HOST}" != "127.0.0.1" ]; then
+  REDIS_ARGS="${REDIS_ARGS} --tls"
 fi
 
 # PING
@@ -280,7 +299,7 @@ if [ -z "$CLOUDINARY_CLOUD_NAME" ] || [ -z "$CLOUDINARY_API_KEY" ] || [ -z "$CLO
   echo -e "  ${RED}[SKIP]${NC} Cloudinary credentials missing in .env — skipping all Cloudinary checks"
 else
   # Usage — verifies cloud name + API key + secret are all correct (Basic auth: api_key:api_secret)
-  USAGE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+  USAGE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
     -u "${CLOUDINARY_API_KEY}:${CLOUDINARY_API_SECRET}" \
     "https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/usage" 2>/dev/null)
   if [ "$USAGE_HTTP" = "200" ]; then

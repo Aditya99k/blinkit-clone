@@ -1,7 +1,9 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────
 # start-backend.sh — Start all Spring Boot microservices
-# Usage:  ./start-backend.sh
+# Usage:  ./start-backend.sh           → defaults to dev
+#         ./start-backend.sh dev       → loads .env.dev, profile=dev
+#         ./start-backend.sh prod      → loads .env.prod, profile=prod
 # Stop:   ./stop-backend.sh
 # ─────────────────────────────────────────────────────────────────
 
@@ -12,16 +14,35 @@ LOG_DIR="$SCRIPT_DIR/logs"
 JAR_DIR="$SCRIPT_DIR"
 PID_FILE="$SCRIPT_DIR/.pids"
 
-# ── Load .env ────────────────────────────────────────────────────
-if [ -f "$SCRIPT_DIR/.env" ]; then
+# ── Resolve profile ──────────────────────────────────────────────
+PROFILE="${1:-dev}"
+if [[ "$PROFILE" != "dev" && "$PROFILE" != "prod" ]]; then
+  echo "[ERROR] Unknown profile: '$PROFILE'. Use 'dev' or 'prod'."
+  exit 1
+fi
+export PROFILE   # exported so infra-check.sh sees it
+echo "[INFO] Starting with profile: $PROFILE"
+
+# ── Load profile env file ────────────────────────────────────────
+ENV_FILE="$SCRIPT_DIR/.env.$PROFILE"
+if [ -f "$ENV_FILE" ]; then
+  set -o allexport
+  source "$ENV_FILE"
+  set +o allexport
+  echo "[INFO] Loaded $ENV_FILE"
+elif [ -f "$SCRIPT_DIR/.env" ]; then
+  # fallback to .env for backward compatibility
   set -o allexport
   source "$SCRIPT_DIR/.env"
   set +o allexport
-  echo "[INFO] Loaded .env"
+  echo "[WARN] .env.$PROFILE not found — falling back to .env"
 else
-  echo "[ERROR] .env file not found at $SCRIPT_DIR/.env"
+  echo "[ERROR] No env file found. Expected: $ENV_FILE"
+  echo "        Copy .env.example to .env.$PROFILE and fill in your values."
   exit 1
 fi
+
+export SPRING_PROFILES_ACTIVE="$PROFILE"
 
 mkdir -p "$LOG_DIR"
 > "$PID_FILE"   # clear old PIDs
@@ -67,21 +88,22 @@ start_service() {
     exit 1
   fi
 
-  echo "[INFO] Starting $name..."
-  java -jar "$jar" > "$log" 2>&1 &
+  echo "[INFO] Starting $name (profile=$PROFILE)..."
+  java -jar "$jar" --spring.profiles.active="$PROFILE" > "$log" 2>&1 &
   local pid=$!
   echo "$name=$pid" >> "$PID_FILE"
   echo "[INFO] $name started (PID $pid) — logs: logs/${name}.log"
 }
 
 # ── Helper: wait for a port to be ready ─────────────────────────
+# Uses nc (netcat) which is available on both macOS and Ubuntu
 wait_for_port() {
   local name=$1
   local port=$2
   local retries=30
   echo -n "[INFO] Waiting for $name on port $port "
   for i in $(seq 1 $retries); do
-    if lsof -i ":$port" | grep -q LISTEN 2>/dev/null; then
+    if nc -z localhost "$port" 2>/dev/null; then
       echo " ready!"
       return 0
     fi
