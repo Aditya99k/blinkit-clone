@@ -100,7 +100,7 @@ start_service() {
 wait_for_port() {
   local name=$1
   local port=$2
-  local retries=30
+  local retries=60
   echo -n "[INFO] Waiting for $name on port $port "
   for i in $(seq 1 $retries); do
     if nc -z localhost "$port" 2>/dev/null; then
@@ -111,7 +111,7 @@ wait_for_port() {
     sleep 2
   done
   echo ""
-  echo "[ERROR] $name did not start on port $port after 60s. Check logs/${name}.log"
+  echo "[ERROR] $name did not start on port $port after 120s. Check logs/${name}.log"
   exit 1
 }
 
