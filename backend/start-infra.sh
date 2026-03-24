@@ -49,16 +49,23 @@ fi
 echo ""
 echo "[INFRA] Checking Docker infra containers..."
 
-# Build compose command — add prod override if running in prod profile
+# Build compose command
+# prod: kafka-only (Redis = Upstash cloud, no local Redis needed)
+# dev:  full infra (Kafka + local Redis + UIs)
 COMPOSE_PROFILE="${PROFILE:-dev}"
-COMPOSE_CMD="docker compose -f $SCRIPT_DIR/docker-compose.infra.yml"
-if [ "$COMPOSE_PROFILE" = "prod" ] && [ -f "$SCRIPT_DIR/docker-compose.infra.prod.yml" ]; then
-  COMPOSE_CMD="$COMPOSE_CMD -f $SCRIPT_DIR/docker-compose.infra.prod.yml"
-  echo "[INFRA] Using prod port overrides (all ports bound to 127.0.0.1)"
+if [ "$COMPOSE_PROFILE" = "prod" ] && [ -f "$SCRIPT_DIR/docker-compose.kafka-prod.yml" ]; then
+  COMPOSE_CMD="docker compose -f $SCRIPT_DIR/docker-compose.kafka-prod.yml"
+  echo "[INFRA] Prod mode: using kafka-only compose (Redis = Upstash)"
+else
+  COMPOSE_CMD="docker compose -f $SCRIPT_DIR/docker-compose.infra.yml"
 fi
 
-REDIS_RUNNING=$(docker ps --filter "name=blinkit-redis" --filter "status=running" --format "{{.Names}}" 2>/dev/null | grep -x "blinkit-redis" || true)
 KAFKA_RUNNING=$(docker ps --filter "name=blinkit-kafka" --filter "status=running" --format "{{.Names}}" 2>/dev/null | grep -x "blinkit-kafka" || true)
+if [ "$COMPOSE_PROFILE" != "prod" ]; then
+  REDIS_RUNNING=$(docker ps --filter "name=blinkit-redis" --filter "status=running" --format "{{.Names}}" 2>/dev/null | grep -x "blinkit-redis" || true)
+else
+  REDIS_RUNNING="upstash"  # not local in prod
+fi
 
 if [ -z "$REDIS_RUNNING" ] || [ -z "$KAFKA_RUNNING" ]; then
   echo "[INFRA] One or more infra containers are not running — starting docker compose..."
@@ -79,24 +86,28 @@ else
   echo "[INFRA] All infra containers are already running."
 fi
 
-# ── Step 3: Wait for Redis to be healthy ─────────────────────────
-echo ""
-echo -n "[INFRA] Waiting for Redis to be ready "
-for i in $(seq 1 20); do
-  REDIS_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' blinkit-redis 2>/dev/null || echo "unknown")
-  if [ "$REDIS_HEALTH" = "healthy" ]; then
-    echo " ✅ Redis is ready!"
-    break
-  fi
-  echo -n "."
-  sleep 2
-  if [ "$i" -eq 20 ]; then
-    echo ""
-    echo "[INFRA] ERROR: Redis did not become healthy after 40s."
-    echo "        Check logs: docker logs blinkit-redis"
-    exit 1
-  fi
-done
+# ── Step 3: Wait for Redis to be healthy (dev only — prod uses Upstash) ──────
+if [ "$COMPOSE_PROFILE" != "prod" ]; then
+  echo ""
+  echo -n "[INFRA] Waiting for Redis to be ready "
+  for i in $(seq 1 20); do
+    REDIS_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' blinkit-redis 2>/dev/null || echo "unknown")
+    if [ "$REDIS_HEALTH" = "healthy" ]; then
+      echo " ✅ Redis is ready!"
+      break
+    fi
+    echo -n "."
+    sleep 2
+    if [ "$i" -eq 20 ]; then
+      echo ""
+      echo "[INFRA] ERROR: Redis did not become healthy after 40s."
+      echo "        Check logs: docker logs blinkit-redis"
+      exit 1
+    fi
+  done
+else
+  echo "[INFRA] Skipping local Redis check (prod uses Upstash Redis)"
+fi
 
 # ── Step 4: Wait for Kafka to be healthy ─────────────────────────
 echo ""
