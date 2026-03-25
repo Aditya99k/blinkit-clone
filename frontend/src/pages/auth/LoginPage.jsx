@@ -6,7 +6,9 @@ import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authApi } from '../../api/auth.api';
+import { userApi } from '../../api/user.api';
 import { useAuthStore } from '../../stores/authStore';
+import { useProfileStore } from '../../stores/profileStore';
 import { AuthLayout } from './AuthLayout';
 
 const loginSchema = z.object({
@@ -20,6 +22,7 @@ export default function LoginPage() {
   const location = useLocation();
   const setAuth = useAuthStore((s) => s.setAuth);
   const getDashboardPath = useAuthStore((s) => s.getDashboardPath);
+  const setProfile = useProfileStore((s) => s.setProfile);
 
   const {
     register,
@@ -36,6 +39,12 @@ export default function LoginPage() {
 
       const { userId, email, role, accessToken, refreshToken } = res.data.data;
       setAuth({ userId, email, role, accessToken, refreshToken });
+
+      // Fetch profile immediately so avatar shows in header right away
+      try {
+        const profileRes = await userApi.getProfile();
+        setProfile(profileRes.data.data);
+      } catch {}
 
       toast.success('Welcome back!');
 
