@@ -230,9 +230,9 @@ Service-specific overrides go in `configs/{service-name}.yml` in the same folder
 | Stage | Focus | Status |
 |---|---|---|
 | **1** | Infrastructure & Skeleton (Eureka, Config, Gateway) | ✅ Done |
-| 2 | Auth & User (JWT, OTP, password reset, user profiles) | ⏳ Next |
-| 3 | Product Catalog & Inventory | — |
-| 4 | Cart & Coupons | — |
-| 5 | Orders & Payments (Razorpay) | — |
-| 6 | Frontend (React 18 + Vite) | — |
-| 7 | Delivery, Reviews & Docker | — |
+| 2 | Auth & User (JWT, OTP, password reset, user profiles) | ✅ Done|
+| 3 | Product Catalog & Inventory | ✅ Done |
+| 4 | Cart & Coupons | ✅ Done |
+| 5 | Orders & Payments (Razorpay) | ✅ Done |
+| 6 | Frontend (React 18 + Vite) | ✅ Done |
+| 7 | Delivery, Reviews & Docker | ✅ Done |
